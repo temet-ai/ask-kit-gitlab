@@ -1,0 +1,13 @@
+{
+  "about": "The kinds of question agents answer by hand with glab and the GitLab API: is a merge request open, merged or green, what is the latest pipeline of a branch and did it pass, which jobs ran and which failed, why a job failed, which merge requests are open, what a merge request changes. They are put as 'in this project', and the bench has no fixed expectations for model questions: the patterns only check the shape of an answer (a state word, an id). Run it in a folder that is a GitLab project you can read. The two `do` entries run a script with no model.",
+  "questions": [
+    { "id": "latest-pipeline", "q": "In this project, what is the latest pipeline on the default branch, and did it pass?", "expect": ["pipeline \\d{5,}|\\b\\d{7,}\\b", "success|passed|failed|running|canceled|pending"] },
+    { "id": "mr-state", "q": "In this project, take the most recently merged merge request. Which commit merged it, and who merged it?", "expect": ["merged", "\\b[0-9a-f]{7,40}\\b"] },
+    { "id": "open-mrs", "q": "In this project, which merge requests are open right now, and does each have a green pipeline?", "expect": ["!\\d+|merge request \\d+|\\bopen", "success|passed|failed|running|no pipeline|pending"] },
+    { "id": "failed-job", "q": "In this project, find the most recent failed pipeline on the default branch. Which job failed, in which stage, and what does the end of its log say?", "expect": ["job \\d{5,}|\\b\\d{8,}\\b", "stage|test|build|deploy|lint", "failed|error|exit code"] },
+    { "id": "mr-changes", "q": "In this project, what does the most recently merged merge request change: how many files, and did it change any dependency version?", "expect": ["\\b\\d+ files?\\b|\\bfiles?\\b[^.\\n]{0,20}\\b\\d+", "version|dependenc|no dependenc|none"] },
+    { "id": "window", "q": "In this project, what was merged in the last 7 days?", "expect": ["!\\d+|merge request|merged|nothing|no merge"] },
+    { "id": "activity-shot", "do": "activity", "params": { "days": 14 }, "expect": ["\"since\"", "\"merged\"", "\"pipelines\"", "\"byStatus\""] },
+    { "id": "find-shot", "do": "find", "params": { "query": "update", "max": 3 }, "expect": ["\"query\"", "\"items\"", "\"counts\""] }
+  ]
+}

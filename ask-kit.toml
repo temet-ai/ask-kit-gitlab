@@ -1,0 +1,41 @@
+id = "temet.gitlab"
+name = "gitlab"
+version = "0.1.0"
+min_ask_kit = "0.2.0"
+requires = ["glab"]
+says = "this project on GitLab: merge requests (pipeline, approvals, unresolved threads, conflicts, what one changes, whether and by which commit it merged), pipelines and jobs (why a job failed, from its log), issues, releases, what happened in a time window, which merge request covers a topic; and acting on them (comment, approve, merge, retry or cancel a pipeline or job, create or close an issue or merge request, label, resolve a thread)"
+keywords = ["merge requests?", "MRs?", "gitlab", "pipelines?", "CI jobs?", "job logs?", "traces?", "approvals?", "threads?", "discussions?", "glab", "issues?", "releases?", "\\.gitlab-ci"]
+route_hint = "GitLab state (a merge request, a pipeline or job, an issue, a release, approvals, review threads) is gitlab; a pull request or GitHub Actions run is github; local commits, branches and worktrees are git; what the code says is code; what a past session did about a merge request is sessions or mike"
+cite = "!<iid> for a merge request, #<iid> for an issue, pipeline <id> or job <id>, a commit sha, or a URL"
+instructions = "instructions.md"
+state_key = "${GITLAB_REPO}"
+acts = [
+  "glab mr: comment (note), approve, revoke, merge, rebase, create, update, close, reopen, delete, subscribe, todo, checkout",
+  "glab ci: retry, cancel, run, trigger, delete, artifact downloads",
+  "glab issue: create, update, close, reopen, delete, note, subscribe",
+  "glab release, label, milestone, schedule and snippet: create, update, delete",
+  "glab api with POST, PUT, PATCH or DELETE, and a GraphQL mutation",
+]
+
+[[settings]]
+key = "GITLAB_REPO"
+about = "the project, as group/subgroup/project or its git remote URL; found from the origin remote of the folder the agent works in"
+detect = ["git", "remote", "get-url", "origin"]
+
+[[sources]]
+kind = "module"
+name = "glab"
+module = "glab.mjs"
+api = "api.d.ts"
+
+[[roles]]
+name = "reviewer"
+when = "a request to review a merge request: read what it changes and report findings, and comment only when asked"
+patterns = ["\\breview\\b.*\\b(mr|merge request|!\\d+)", "\\b(mr|merge request|!\\d+)\\b.*\\breview\\b"]
+instructions = "roles/reviewer.md"
+
+[[roles]]
+name = "pipeline-fixer"
+when = "a request to get a red pipeline green, or to say why a job failed and whether it is flaky"
+patterns = ["\\b(fix|green|unbreak|red)\\b.*\\b(pipeline|ci|job)\\b", "\\bwhy\\b.*\\b(pipeline|job)\\b.*\\bfail"]
+instructions = "roles/pipeline-fixer.md"
