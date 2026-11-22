@@ -19,10 +19,15 @@ export default async function ({ glab }, { mr, branch } = {}) {
   const m = await glab.api(`projects/:id/merge_requests/${iid}`);
   const name = (u) => u?.name ?? u?.username ?? null;
 
-  let pipeline = null;
   const hp = m.head_pipeline ?? m.pipeline;
+  const jobsP = hp?.id ? glab.api(`projects/:id/pipelines/${hp.id}/jobs`, { fields: { per_page: 100 }, paginate: true }).catch(() => []) : null;
+  const discussionsP = glab.api(`projects/:id/merge_requests/${iid}/discussions`, { paginate: true }).catch(() => []);
+  const approvalsP = glab.api(`projects/:id/merge_requests/${iid}/approvals`).then((a) => ({ a }), (e) => ({ e }));
+  const rulesP = glab.api(`projects/:id/merge_requests/${iid}/approval_state`).then((r) => r.rules ?? [], () => []);
+
+  let pipeline = null;
   if (hp?.id) {
-    const jobs = await glab.api(`projects/:id/pipelines/${hp.id}/jobs`, { fields: { per_page: 100 }, paginate: true }).catch(() => []);
+    const jobs = await jobsP;
     const byStatus = {};
     for (const j of jobs) byStatus[j.status] = (byStatus[j.status] ?? 0) + 1;
     pipeline = {
@@ -40,12 +45,11 @@ export default async function ({ glab }, { mr, branch } = {}) {
 
   // Approvals are a paid feature on some tiers; a refusal is reported, not fatal.
   let approvals = null;
-  try {
-    const a = await glab.api(`projects/:id/merge_requests/${iid}/approvals`);
-    let rules = [];
-    try {
-      rules = (await glab.api(`projects/:id/merge_requests/${iid}/approval_state`)).rules ?? [];
-    } catch {}
+  const ar = await approvalsP;
+  if (ar.e) approvals = { note: `approvals not available: ${ar.e.message.slice(0, 120)}` };
+  else {
+    const a = ar.a;
+    const rules = await rulesP;
     approvals = {
       required: a.approvals_required ?? null,
       left: a.approvals_left ?? null,
@@ -53,11 +57,9 @@ export default async function ({ glab }, { mr, branch } = {}) {
       approvedBy: (a.approved_by ?? []).map((x) => name(x.user)),
       rules: rules.map((r) => ({ name: r.name, approved: r.approved, needs: r.approvals_required, by: (r.approved_by ?? []).map(name) })).slice(0, 15),
     };
-  } catch (e) {
-    approvals = { note: `approvals not available: ${e.message.slice(0, 120)}` };
   }
 
-  const discussions = await glab.api(`projects/:id/merge_requests/${iid}/discussions`, { paginate: true }).catch(() => []);
+  const discussions = await discussionsP;
   const unresolved = discussions
     .filter((d) => d.notes?.some((n) => n.resolvable) && !d.notes.filter((n) => n.resolvable).every((n) => n.resolved))
     .map((d) => {
