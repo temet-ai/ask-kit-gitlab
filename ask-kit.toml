@@ -1,6 +1,6 @@
 id = "temet.gitlab"
 name = "gitlab"
-version = "0.1.0"
+version = "0.1.1"
 min_ask_kit = "0.2.0"
 requires = ["glab"]
 says = "this project on GitLab: merge requests (pipeline, approvals, unresolved threads, conflicts, what one changes, whether and by which commit it merged), pipelines and jobs (why a job failed, from its log), issues, releases, what happened in a time window, which merge request covers a topic; and acting on them (comment, approve, merge, retry or cancel a pipeline or job, create or close an issue or merge request, label, resolve a thread)"
@@ -16,6 +16,7 @@ acts = [
   "glab release, label, milestone, schedule and snippet: create, update, delete",
   "glab api with POST, PUT, PATCH or DELETE, and a GraphQL mutation",
 ]
+reads = ["glab mr view", "glab mr list", "glab ci view", "glab ci list", "glab issue view", "glab issue list"]
 
 [[settings]]
 key = "GITLAB_REPO"
